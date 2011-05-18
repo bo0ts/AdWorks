@@ -1,0 +1,35 @@
+0	"Bahn"	1
+0	"Zug"	1.1
+0	"Reise"	0.6
+0	"Verkehr" 0.6
+0	"Schienen"	0.7
+0	"Bequem reisen"	2
+1	"Muttertag"	2
+1	"Blume"	2
+1	"Geschenk"	1.1
+2	"Geek"	2
+2	"Nerd"	2
+2	"Informatiker"	2
+2	"Technik"	3
+2	"Spielzeug"	2
+2	"Tablet"	2
+3	"Tablet"	2
+3	"Handy"	2
+3	"Apps"	2
+3	"Spielzeug"	3
+4	"Innovation"	3
+4	"Netzwerk"	2
+4	"Ad-hoc"	2
+4	"Vermaschte Netze"	3
+4	"Computational Advertising"	2.3
+5	"Guttenberg"	2.3
+5	"Plagiat"	3
+5	"Dissertation"	4
+5	"Karriereende" 3.2
+5	"CSU"	3
+5	"Verteididungsminister"	3.1
+6	"Thinkpad" 4.2
+6	"Notebook"	2.1
+6	"Arbeit"	1.1
+6	"zuverlässiger Begleiter"	1
+6	"Qualität"	1
