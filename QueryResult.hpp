@@ -3,13 +3,12 @@
 
 //std
 #include <string>
-#include <cstdint>
+#include <stdint.h>
 
 class IQueryResult
 {
 public:
-  IQueryResult();
-  virtual ~IQueryResult();
+  virtual ~IQueryResult() {}
   virtual std::string getTitle() const = 0;
   virtual std::string getCreative() const = 0;
   virtual uint32_t getAdID() const = 0;
