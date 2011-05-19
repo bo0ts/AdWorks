@@ -1,8 +1,9 @@
 #ifndef _QUERYRESULT_H_
 #define _QUERYRESULT_H_
 
+//std
 #include <string>
-
+#include <cstdint>
 
 class IQueryResult
 {
@@ -20,12 +21,6 @@ class QueryResult : public IQueryResult
   virtual std::string getCreative() const;
   virtual uint32_t getAdID() const;
 };
-
-
-
-
-
-
 
 #endif /* _QUERYRESULT_H_ */
 

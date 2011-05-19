@@ -1,13 +1,22 @@
 #ifndef _FRONTEND_H_
 #define _FRONTEND_H_
 
+//std
+#include <string>
+#include <cstdint>
+
+//aufgabe
+#include "QueryResult.hpp"
+
+
 class IFrontEnd
 {
 public:
   // ermittelt das am besten passende Ad und erhöht die
   // Impressionsanzahl
-  virtual IQueryResult matchAd(std::string   query,   const  IUser*
-			       user = NULL, bool* foundAd = NULL) = 0;
+  virtual IQueryResult matchAd(std::string   query,   
+			       const  IUser* user = NULL, 
+			       bool* foundAd = NULL) = 0;
 
   // ermittelt die Landing Page des Ads adID und erhöht seine
   // Klickanzahl
@@ -18,8 +27,8 @@ public:
   virtual bool analyzeClickGraph(const std::string& file) = 0;
   // Berechne Wahrscheinlichkeiten demographischer Merkmale von
   // Webseiten
-  virtual   bool   analyzeDemographicFeatures(const    std::string& userFile, 
-					      const std::string& visitFile) = 0;
+  virtual bool analyzeDemographicFeatures(const std::string& userFile, 
+					  const std::string& visitFile) = 0;
 
   // setze das zu verwendende Backend
   virtual void setBackend(IBackEnd* backend) = 0;
