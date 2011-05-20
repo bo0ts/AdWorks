@@ -1,0 +1,13 @@
+INSTALL
+
+$ make
+
+TOOLS
+
+environment:
+	g++ (GCC) 4.6.0 PRERELEASE
+	Linux horus_ 2.6.38-ARCH #1 SMP PREEMPT Fri May 13 07:54:18 UTC 2011 i686 Intel(R) Core(TM)2 Duo CPU T5550 @ 1.8        3GHz GenuineIntel GNU/Linux
+	boost 1.46.0
+	GNU Make 3.82
+	GNU Emacs 23.3.1
+
