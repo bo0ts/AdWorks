@@ -10,7 +10,6 @@
 #include "QueryResult.hpp"
 #include "User.hpp"
 
-
 class IFrontEnd
 {
 public:
@@ -22,10 +21,10 @@ public:
 
   // XXX will never work this way. IQueryResult is pure virtual, return shared_ptr???
 
-  // virtual IQueryResult matchAd(std::string   query,   
-  // 			       const  IUser* user = NULL, 
-  // 			       bool* foundAd = NULL) = 0;
-
+  virtual QueryResult matchAd(std::string   query,   
+			      const  IUser* user = NULL, 
+			      bool* foundAd = NULL) = 0;
+  
   // ermittelt die Landing Page des Ads adID und erhöht seine
   // Klickanzahl
   virtual std::string getAdURL(uint32_t adID) = 0;
@@ -45,15 +44,15 @@ public:
 class FrontEnd : public IFrontEnd
 {
 public:
-  FrontEnd();
+  FrontEnd() : backEnd_(NULL) {}
   virtual ~FrontEnd() {}
 
   // ermittelt das am besten passende Ad und erhöht die
   // Impressionsanzahl
 
-  // virtual IQueryResult matchAd(std::string   query,   
-  // 			       const  IUser* user = NULL, 
-  // 			       bool* foundAd = NULL);
+  virtual QueryResult matchAd(std::string   query,   
+   			       const  IUser* user = NULL, 
+			       bool* foundAd = NULL);
 
   // ermittelt die Landing Page des Ads adID und erhöht seine
   // Klickanzahl
@@ -69,6 +68,9 @@ public:
 
   // setze das zu verwendende Backend
   virtual void setBackend(IBackEnd* backend);
+
+private:
+  IBackEnd* backEnd_;
 };
 
 

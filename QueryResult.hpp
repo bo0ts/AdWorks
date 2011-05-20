@@ -5,20 +5,18 @@
 #include <string>
 #include <stdint.h>
 
-class IQueryResult
+class QueryResult
 {
 public:
-  virtual ~IQueryResult() {}
-  virtual std::string getTitle() const = 0;
-  virtual std::string getCreative() const = 0;
-  virtual uint32_t getAdID() const = 0;
-};
-
-class QueryResult : public IQueryResult
-{
-  virtual std::string getTitle() const;
-  virtual std::string getCreative() const;
-  virtual uint32_t getAdID() const;
+  QueryResult(const std::string& title, const std::string& creative, uint32_t adID)
+    : title_(title), creative_(creative), adID_(adID) {}
+  const std::string& getTitle() const { return title_; }
+  const std::string& getCreative() const { return creative_; }
+  uint32_t getAdID() const { return adID_; }
+private:
+  std::string title_;
+  std::string creative_;
+  uint32_t adID_;
 };
 
 #endif /* _QUERYRESULT_H_ */

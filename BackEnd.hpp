@@ -13,16 +13,15 @@
 class IBackEnd
 {
 public:
-  IBackEnd() {}
   virtual ~IBackEnd() {}
 
   // siehe: IFrontEnd::matchAd
 
   // XXX see why this wont fucking work
 
-  // virtual IQueryResult matchAdRewrites(std::list<std::string> rewriteList, 
-  // 				       const IUser* user = NULL, 
-  // 				       bool* foundAd = NULL) = 0;
+  virtual QueryResult matchAdRewrites(std::list<std::string> rewriteList, 
+   				       const IUser* user = NULL, 
+   				       bool* foundAd = NULL) = 0;
 
   // siehe: IFrontEnd::getAdURL
   virtual std::string getAdURL(uint32_t adID) = 0;
@@ -31,6 +30,20 @@ public:
   virtual bool initDatabase(const std::string& adFile, const std::string& bidPhraseFile) = 0;
 };
 
+class BackEnd : public IBackEnd
+{
+public:
+  virtual ~BackEnd() {}
+  virtual QueryResult matchAdRewrites(std::list<std::string> rewriteList, 
+				      const IUser* user = NULL, 
+				      bool* foundAd = NULL);
 
+  // siehe: IFrontEnd::getAdURL
+  virtual std::string getAdURL(uint32_t adID);
+
+  // Datenbank mit Ads und Bid Phrases initialisieren
+  virtual bool initDatabase(const std::string& adFile, const std::string& bidPhraseFile);
+
+};
 
 #endif /* _BACKEND_H_ */

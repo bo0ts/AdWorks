@@ -1,5 +1,6 @@
 //boost
 #include <boost/program_options.hpp>
+#include <boost/scoped_ptr.hpp>
 
 //std
 #include <vector>
@@ -9,6 +10,10 @@
 
 //c99
 #include <stdint.h>
+
+//lib
+#include "BackEnd.hpp"
+#include "FrontEnd.hpp"
 
 
 int main(int argc, char* argv[]) {
@@ -37,6 +42,13 @@ int main(int argc, char* argv[]) {
   }
 
   if (vm.count("matchad")) {
+    boost::scoped_ptr<FrontEnd> frontEnd(new FrontEnd());
+    boost::scoped_ptr<BackEnd> backEnd(new BackEnd());
+    frontEnd->setBackend(backEnd.get());
+    
+    /*frontEnd->matchAd(query);*/
+    
+
     std::cout << desc << "\n";
     return EXIT_SUCCESS;
   }
