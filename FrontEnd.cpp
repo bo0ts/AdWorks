@@ -5,10 +5,6 @@
 QueryResult FrontEnd::matchAd(std::string query,   
 			      const  IUser* user, 
 			      bool* foundAd) {
-  //ignore those for now
-  user = NULL;
-  foundAd = NULL;
-
   std::list<std::string> rewrites;
   rewrites.push_back(query);
 

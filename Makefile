@@ -3,14 +3,14 @@ CXX = g++
 DEBUG = -g
 OPTI = -O0
 CXXFLAGS = -Wall -Wextra -c $(DEBUG) $(OPTI)
-LFLAGS = -lboost_program_options $(DEBUG) $(OPTI)
+LFLAGS = -lboost_program_options -lmysqlcppconn $(DEBUG) $(OPTI)
 
-main: $(OBJS) 
-	$(CXX) $(LFLAGS) $(OBJS) -o main
+adworks: $(OBJS) 
+	$(CXX) $(LFLAGS) $(OBJS) -o adworks
 
 .PHONY: clean
 clean:
-	rm -f *.o main
+	rm -f *.o adworks
 
 BackEnd.o: BackEnd.cpp BackEnd.hpp QueryResult.hpp User.hpp
 

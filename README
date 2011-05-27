@@ -1,6 +1,8 @@
 INSTALL
 
+Do this:
 $ make
+$ ./main help
 
 TOOLS
 
@@ -10,4 +12,18 @@ environment:
 	boost 1.46.0
 	GNU Make 3.82
 	GNU Emacs 23.3.1
+
+deps:
+	boost 1.46
+	mysql-connector-c++
+
+mysql: 
+       there has to be a mysql-database named 'AdWorks' and a user
+       with all privileges for this database and ofc. the user must
+       be able to connect to the mysql-
+
+example for localhost:
+	mysql> create database AdWorks;
+	mysql> grant usage on *.* to adworks_user@localhost identified by 'adworks_users_passwort';
+	mysql> grant all privileges on AdWorks.* to adworks_user@localhost;
 

@@ -4,10 +4,17 @@
 #include "QueryResult.hpp"
 #include "User.hpp"
 
+//boost
+#include <boost/scoped_ptr.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
 
 //std
 #include <stdint.h>
+#include <fstream>
 
+//sql
+#include <cppconn/connection.h>
 
 
 class IBackEnd
@@ -33,6 +40,7 @@ public:
 class BackEnd : public IBackEnd
 {
 public:
+  BackEnd(std::ifstream& in);
   virtual ~BackEnd() {}
   virtual QueryResult matchAdRewrites(std::list<std::string> rewriteList, 
 				      const IUser* user = NULL, 
@@ -43,7 +51,10 @@ public:
 
   // Datenbank mit Ads und Bid Phrases initialisieren
   virtual bool initDatabase(const std::string& adFile, const std::string& bidPhraseFile);
-
+private:
+  void parseConfig(std::ifstream& in);
+  boost::scoped_ptr<sql::Connection> con;
+  bool tablesExist();
 };
 
 #endif /* _BACKEND_H_ */

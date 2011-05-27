@@ -1,6 +1,6 @@
 ## Configuration
-DB
-Server
-Port 
-User 
-Password 
+## DB
+Server=localhost
+Port=3306
+User=rvsprak
+Password=
