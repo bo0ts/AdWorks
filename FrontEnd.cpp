@@ -6,6 +6,8 @@ QueryResult FrontEnd::matchAd(std::string query,
 			      const  IUser* user, 
 			      bool* foundAd) {
   std::list<std::string> rewrites;
+
+  //rewrite the query and put all rewrites in here
   rewrites.push_back(query);
 
   if(backEnd_ != NULL)
@@ -21,11 +23,11 @@ std::string FrontEnd::getAdURL(uint32_t adID) {
     throw std::runtime_error("backEnd is NULL");
 }
 
-bool FrontEnd::analyzeClickGraph(const std::string& file) { return true; }
+bool FrontEnd::analyzeClickGraph(const std::string& file) { (void)file; return true; }
 
 bool FrontEnd::analyzeDemographicFeatures(const std::string& userFile, 
 				const std::string& visitFile)
-{return true;}
+{ (void)userFile; (void)visitFile; return true;}
 
 void FrontEnd::setBackend(IBackEnd* backend) {
   this->backEnd_ = backend;
