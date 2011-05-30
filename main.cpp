@@ -41,6 +41,33 @@ bool help(int argc, char* argv[]) {
   return true;
 }
 
+bool load_click_data(int argc, char* argv[]) {
+  std::string fileName;
+  po::options_description desc("Allowed options for visit");
+  desc.add_options()
+    ("help", "produces help message")
+    ("click-file", po::value<std::string>(&fileName));
+
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  po::notify(vm);    
+
+  if(vm.count("help")) {
+    std::cout << desc << std::endl;
+    return EXIT_SUCCESS;
+  }
+
+  if(!vm.count("click-file")) {
+    std::cout << "no click-file given. See --help" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  //adlfasdfasdf
+  frontEnd->analyzeClickGraph(fileName);
+
+  return EXIT_SUCCESS;
+}
+
 //visit
 bool visit(int argc, char* argv[]) { 
   uint32_t id;
@@ -48,7 +75,7 @@ bool visit(int argc, char* argv[]) {
   po::options_description desc("Allowed options for visit");
   desc.add_options()
     ("help", "produce help message")
-    ("id", po::value<uint32_t>(&id)->required(), "visit ad with this id\nanonymous option also possible")
+    ("id", po::value<uint32_t>(&id), "visit ad with this id\nanonymous option also possible")
     ;
 
   po::positional_options_description p;
@@ -63,6 +90,12 @@ bool visit(int argc, char* argv[]) {
     std::cout << desc << std::endl;
     return EXIT_SUCCESS;
   }
+
+  if (!vm.count("id")) {
+    std::cout << "Missing id. See --help" << std::endl;
+    return EXIT_SUCCESS;
+  }
+
 
   std::cout << " visiting id: " << id << " ";
   std::cout << "with landing page: " << frontEnd->getAdURL(id) << std::endl;
@@ -152,7 +185,8 @@ int main(int argc, char* argv[]) {
   
     boost::assign::insert(options)
       ( "help",    &help )( "visit",  &visit )
-      ( "matchad", &matchad )( "reload", &reload );
+      ( "matchad", &matchad )( "reload", &reload )
+      ( "load_click_data", &load_click_data );
 
     if(argc < 2) { 
       std::cout << "no option specified" << std::endl;
