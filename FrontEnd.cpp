@@ -23,7 +23,9 @@ std::string FrontEnd::getAdURL(uint32_t adID) {
     throw std::runtime_error("backEnd is NULL");
 }
 
-bool FrontEnd::analyzeClickGraph(const std::string& file) { (void)file; return true; }
+bool FrontEnd::analyzeClickGraph(const std::string& file) { 
+  (void)file; return true; 
+}
 
 bool FrontEnd::analyzeDemographicFeatures(const std::string& userFile, 
 				const std::string& visitFile)

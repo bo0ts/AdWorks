@@ -32,6 +32,7 @@ public:
   // Verwende des Log in file um den Klick-Graphen zu bauen und
   // ähnliche Queries zu finden
   virtual bool analyzeClickGraph(const std::string& file) = 0;
+
   // Berechne Wahrscheinlichkeiten demographischer Merkmale von
   // Webseiten
   virtual bool analyzeDemographicFeatures(const std::string& userFile, 

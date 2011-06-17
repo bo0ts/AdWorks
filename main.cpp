@@ -62,7 +62,6 @@ bool load_click_data(int argc, char* argv[]) {
     return EXIT_FAILURE;
   }
 
-  //adlfasdfasdf
   frontEnd->analyzeClickGraph(fileName);
 
   return EXIT_SUCCESS;
