@@ -4,6 +4,7 @@
 #include <set>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
+#include <math.h>
 //sql
 #include <mysql_connection.h>
 #include <cppconn/driver.h>
@@ -13,12 +14,50 @@
 #include <cppconn/resultset_metadata.h>
 #include <cppconn/exception.h>
 #include <cppconn/warning.h>
+#include <boost/numeric/ublas/matrix_proxy.hpp>
+#include <boost/numeric/ublas/io.hpp>
 
 using namespace std;
 using namespace boost;
 
 FrontEnd::FrontEnd(std::ifstream& in):backEnd_(NULL) {
   parseConfig(in);
+}
+
+int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<int> a, int i, int j){
+	int count=0;
+	for (unsigned h = 0; h < a.size1(); ++h)
+		if(a(i,h)!=0&&a(j,h)!=0)
+			++count;
+	return count;
+}
+
+double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col, int j){
+	double sum=0;	
+	for (unsigned i = 0; i < col.size(); ++i){
+			sum+=col(i);		
+		}
+	return col(j)/sum;
+}
+
+double FrontEnd::spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row){
+	int count=0;
+	double sum=0;
+	for (unsigned i = 0; i < row.size(); ++i)
+		if(row(i)!=0){
+			count++;
+			sum+=row(i);		
+		}
+	double avg=sum/count;
+	sum=0;
+	for (unsigned i = 0; i < row.size(); ++i)
+		if(row(i)!=0){
+			sum+=(avg-row(i))*(avg-row(i));		
+		}
+	//return exp((double)sum/count*-1.0);
+	if(count==0||sum==0) return 0;
+	return pow((sum/count),-1.0);
+	
 }
 
 bool FrontEnd::tablesExist() {
@@ -192,43 +231,86 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	for(edgeIt=edges.begin();edgeIt!=edges.end();++edgeIt){
 		posInQueries=std::find(queries.begin(), queries.end(),(*edgeIt).query)-queries.begin();
 		posInAds=std::find(ads.begin(), ads.end(),(*edgeIt).ad)-ads.begin();
-		a(posInQueries,posInAds+queries.size())=1;
-		a(posInAds+queries.size(),posInQueries)=1;
+		a(posInQueries,posInAds+queries.size())=(*edgeIt).numClicks;
+		a(posInAds+queries.size(),posInQueries)=(*edgeIt).numClicks;
 	}
 	//testputput
-	/*	
+	
 	for(unsigned int i=0; i<a.size1();i++){
 		for(unsigned int j=0; j<a.size2(); j++){
-			cout<<a(i,j)<<"\t";
+			cout<<a(j,i)<<"\t";
 		}
 		cout<<std::endl;
 	}
-	*/
-
-	//normal-vec (1,1,..,1)	
-	boost::numeric::ublas::vector<int> v(a.size1());
-	for(unsigned int i =0; i<v.size();i++)
-		v(i)=1;
-	
+	cout<<std::endl;
 	//built transition Matrix p
-	boost::numeric::ublas::matrix<double> p(a.size1(),a.size1());
+	boost::numeric::ublas::matrix<double> p=boost::numeric::ublas::zero_matrix<double>(a.size1(),a.size1());
+	for(unsigned int i=0; i<queries.size();i++){
+		for(unsigned int j=queries.size(); j<p.size2(); j++){
+			if(a(j,i)==0) continue;
+			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row (a, j);
+			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col (a, i);			
+			p(j,i)=spread(row)*weight(col,j);			
+		}
+		
+	}	
+	for(unsigned int i=queries.size(); i<p.size2();i++){
+		for(unsigned int j=0; j<queries.size(); j++){
+			if(a(j,i)==0) continue;
+			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row (a, j);
+			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col (a, i);			
+			p(j,i)=spread(row)*weight(col,j);			
+		}
+		
+	}
+	
+	for(unsigned int i=0; i<queries.size();i++){
+		boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (p, i);	
+		double sum=0;	
+		for (unsigned j = 0; j < col.size(); ++j){
+			sum+=col(j);		
+		}
+		p(i,i)=1.0-sum;
+	}
+	
+	cout<<std::endl;
 	for(unsigned int i=0; i<p.size1();i++){
 		for(unsigned int j=0; j<p.size2(); j++){
-			p(i,j)=((double)a(i,j))/(inner_prod(prod(trans(getVec(i,a.size1())),a),v));
-			//cout<<p(i,j)<<"\t\t";
+			cout<<p(i,j)<<"\t";
 		}
-		//cout<<std::endl;
-	}	
+		cout<<std::endl;
+	}
+	
+	
 
 	//bulit identity-matrix
 	boost::numeric::ublas::matrix<int> id=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
 	for(unsigned int i=0; i<p.size1();i++)
 		id(i,i)=1;
 		
+	//bulid V
+	boost::numeric::ublas::matrix<double> v=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
+	for(unsigned int i=0; i<a.size1();i++){
+		for(unsigned int j=0; j<a.size2(); j++){
+			double sum=0;
+			for(int h=1;h<=countSameNeighbors(a,i,j);++h)
+				sum+=1.0/(pow(2,h));			
+			v(i,j)=sum;
+		}	
+	}
+
+	cout<<std::endl;
+	for(unsigned int i=0; i<v.size1();i++){
+		for(unsigned int j=0; j<v.size2(); j++){
+			cout<<v(i,j)<<"\t";
+		}
+		cout<<std::endl;
+	}	
+
 	boost::numeric::ublas::matrix<double> s=id;
 	int k=5;
 	double c=0.8;
-	//calc simrank with C=0.8, k=5
+	//calc simrank with C=0.8, k=20
 	for(int loop=0;loop<k;loop++){
 	s=prod(c*p,s);
 	s=prod(s,trans(p));
@@ -238,14 +320,18 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 			if(row==col)
 				s(col,row)=1;	
 	}
-	/*	
+	/*for(unsigned int i=0; i<s.size1();i++)
+	for(unsigned int j=0; j<s.size2(); j++)
+		s(i,j)=s(i,j)*v(i,j);	
+	*/
 	for(unsigned int i=0; i<s.size1();i++){
 	for(unsigned int j=0; j<s.size2(); j++){
 		cout<<s(i,j)<<"\t";
 	}
 	cout<<std::endl;
 	}
-	*/
+	
+	
 
 	//rank-rewirtes
 	std::vector<pair<string,std::vector<pair<string,double> > > > rankedRewrites;
@@ -261,16 +347,16 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	std::vector<pair<string,std::vector<pair<string,double> > > >::iterator rankedRewritesIt;
 	std::vector<pair<string,double> >::iterator simQueryIt;
 	//Testoutput	
-	/*for(rankedRewritesIt=rankedRewrites.begin();rankedRewritesIt!=rankedRewrites.end();++rankedRewritesIt){
+	for(rankedRewritesIt=rankedRewrites.begin();rankedRewritesIt!=rankedRewrites.end();++rankedRewritesIt){
 		cout<<(*rankedRewritesIt).first<<":\t";	
 		for(simQueryIt=(*rankedRewritesIt).second.begin();simQueryIt!=(*rankedRewritesIt).second.end();++simQueryIt){
 			cout<<(*simQueryIt).first<<"\t"<<(*simQueryIt).second<<"-\t";				
 		}		
 		cout<<endl;
 	}
-	*/
 	
-
+	
+	
 	//load into DB
 	boost::scoped_ptr<sql::PreparedStatement> pstmt;
 	if(tablesExist()) {
@@ -314,6 +400,7 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
      		 cout << "in BackEnd::initDatabase while inserting ads: " << e.getErrorCode() << endl;
       		throw e;
     	}
+	
 	(void)file; return true; 
 }
 
