@@ -191,11 +191,12 @@ int main(int argc, char* argv[]) {
       std::cout << "no option specified" << std::endl;
       return EXIT_FAILURE;
     }
-
+    
+    //TODO: bad design!!
     std::ifstream in("config.txt");
-
-    frontEnd.reset(new FrontEnd());
-    backEnd.reset(new BackEnd(in));
+    frontEnd.reset(new FrontEnd(in));
+    std::ifstream in1("config.txt");
+    backEnd.reset(new BackEnd(in1));
     frontEnd->setBackend(backEnd.get());
 
     std::string option(argv[1]);

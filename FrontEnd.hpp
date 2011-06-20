@@ -10,6 +10,16 @@
 #include "QueryResult.hpp"
 #include "User.hpp"
 
+//boost
+#include <boost/scoped_ptr.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/foreach.hpp>
+#include <boost/numeric/ublas/matrix.hpp>
+#include <boost/numeric/ublas/io.hpp>
+
+//sql
+#include <cppconn/connection.h>
+
 class IFrontEnd
 {
 public:
@@ -42,10 +52,14 @@ public:
   virtual void setBackend(IBackEnd* backend) = 0;
 };
 
+
+
 class FrontEnd : public IFrontEnd
 {
+
+
 public:
-  FrontEnd() : backEnd_(NULL) {}
+  FrontEnd(std::ifstream& in);
   virtual ~FrontEnd() {}
 
   // ermittelt das am besten passende Ad und erhöht die
@@ -70,8 +84,21 @@ public:
   // setze das zu verwendende Backend
   virtual void setBackend(IBackEnd* backend);
 
+protected:
+	boost::numeric::ublas::vector<int> getVec(int i, int size);
+
+
+
 private:
   IBackEnd* backEnd_;
+struct	EDGE{
+ 	std::string query;
+	std::string ad;
+	int numClicks;
+};
+	 void parseConfig(std::ifstream& in);
+ 	 boost::scoped_ptr<sql::Connection> con;
+	 bool tablesExist();
 };
 
 
