@@ -99,9 +99,9 @@ struct	EDGE{
 	 void parseConfig(std::ifstream& in);
  	 boost::scoped_ptr<sql::Connection> con;
 	 bool tablesExist();
-	double spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row);
-	double weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col, int j);
-	int countSameNeighbors(boost::numeric::ublas::matrix<int> a, int i, int j);
+	double spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row);
+	double weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col, int j);
+	int countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j);
 };
 
 

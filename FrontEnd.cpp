@@ -24,7 +24,7 @@ FrontEnd::FrontEnd(std::ifstream& in):backEnd_(NULL) {
   parseConfig(in);
 }
 
-int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<int> a, int i, int j){
+int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j){
 	int count=0;
 	for (unsigned h = 0; h < a.size1(); ++h)
 		if(a(i,h)!=0&&a(j,h)!=0)
@@ -32,7 +32,7 @@ int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<int> a, int i, in
 	return count;
 }
 
-double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col, int j){
+double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col, int j){
 	double sum=0;	
 	for (unsigned i = 0; i < col.size(); ++i){
 			sum+=col(i);		
@@ -40,7 +40,7 @@ double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ubl
 	return col(j)/sum;
 }
 
-double FrontEnd::spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row){
+double FrontEnd::spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row){
 	int count=0;
 	double sum=0;
 	for (unsigned i = 0; i < row.size(); ++i)
@@ -54,9 +54,9 @@ double FrontEnd::spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas:
 		if(row(i)!=0){
 			sum+=(avg-row(i))*(avg-row(i));		
 		}
-	//return exp((double)sum/count*-1.0);
-	if(count==0||sum==0) return 0;
-	return pow((sum/count),-1.0);
+	return exp((double)sum/count*-1.0);
+	//if(count==0||sum==0) return 0;
+	//return pow((sum/count),-1.0);
 	
 }
 
@@ -182,6 +182,8 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	std::vector<string> queries;
 	std::vector<string> ads;
 	std::vector<EDGE> edges;
+		
+	int maxClicks=0;
 
 	while (getline(in,line)){
 		if (line.find("#")!=string::npos) continue;		
@@ -196,6 +198,7 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 		edge.query=query;
 		edge.ad=ad;
 		edge.numClicks=numClicks;
+		if (numClicks>maxClicks) maxClicks=numClicks;		
 		edges.push_back(edge);
 		
 	}
@@ -224,15 +227,15 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	
 	//simrank
 	//build adjacency-matrix
-	boost::numeric::ublas::matrix<int> a=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
+	boost::numeric::ublas::matrix<double> a=boost::numeric::ublas::zero_matrix<double>(ads.size()+queries.size(),ads.size()+queries.size());
 	
 
 	int posInQueries, posInAds;
 	for(edgeIt=edges.begin();edgeIt!=edges.end();++edgeIt){
 		posInQueries=std::find(queries.begin(), queries.end(),(*edgeIt).query)-queries.begin();
 		posInAds=std::find(ads.begin(), ads.end(),(*edgeIt).ad)-ads.begin();
-		a(posInQueries,posInAds+queries.size())=(*edgeIt).numClicks;
-		a(posInAds+queries.size(),posInQueries)=(*edgeIt).numClicks;
+		a(posInQueries,posInAds+queries.size())=((double)(*edgeIt).numClicks)/maxClicks;
+		a(posInAds+queries.size(),posInQueries)=((double)(*edgeIt).numClicks)/maxClicks;
 	}
 	//testputput
 	
@@ -248,23 +251,24 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	for(unsigned int i=0; i<queries.size();i++){
 		for(unsigned int j=queries.size(); j<p.size2(); j++){
 			if(a(j,i)==0) continue;
-			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row (a, j);
-			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col (a, i);			
+			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row (a, j);
+			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (a, i);			
 			p(j,i)=spread(row)*weight(col,j);			
 		}
 		
 	}	
+	/*
 	for(unsigned int i=queries.size(); i<p.size2();i++){
 		for(unsigned int j=0; j<queries.size(); j++){
 			if(a(j,i)==0) continue;
-			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<int> > row (a, j);
-			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<int> > col (a, i);			
+			boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row (a, j);
+			boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (a, i);			
 			p(j,i)=spread(row)*weight(col,j);			
 		}
 		
 	}
-	
-	for(unsigned int i=0; i<queries.size();i++){
+	*/
+	for(unsigned int i=0; i<a.size1();i++){
 		boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (p, i);	
 		double sum=0;	
 		for (unsigned j = 0; j < col.size(); ++j){
@@ -284,7 +288,7 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	
 
 	//bulit identity-matrix
-	boost::numeric::ublas::matrix<int> id=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
+	boost::numeric::ublas::matrix<double> id=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
 	for(unsigned int i=0; i<p.size1();i++)
 		id(i,i)=1;
 		
@@ -295,7 +299,9 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 			double sum=0;
 			for(int h=1;h<=countSameNeighbors(a,i,j);++h)
 				sum+=1.0/(pow(2,h));			
+			if(sum==0) v(i,j)=0.25;			
 			v(i,j)=sum;
+			
 		}	
 	}
 
@@ -312,18 +318,20 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	double c=0.8;
 	//calc simrank with C=0.8, k=20
 	for(int loop=0;loop<k;loop++){
-	s=prod(c*p,s);
-	s=prod(s,trans(p));
+	s=prod(c*trans(p),s);
+		
+	s=prod(s,p);
 	//set diag=1	
 	for(unsigned int col=0; col<s.size1();col++)
 		for(unsigned int row=0; row<s.size2();row++)
 			if(row==col)
 				s(col,row)=1;	
 	}
-	/*for(unsigned int i=0; i<s.size1();i++)
-	for(unsigned int j=0; j<s.size2(); j++)
-		s(i,j)=s(i,j)*v(i,j);	
-	*/
+	for(unsigned int i=0; i<s.size1();i++)
+	for(unsigned int j=0; j<s.size2(); j++)		
+		s(i,j)=s(i,j)*v(i,j);
+	
+	//s=prod(v,s);
 	for(unsigned int i=0; i<s.size1();i++){
 	for(unsigned int j=0; j<s.size2(); j++){
 		cout<<s(i,j)<<"\t";
