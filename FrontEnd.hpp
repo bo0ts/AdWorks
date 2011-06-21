@@ -4,6 +4,7 @@
 //std
 #include <string>
 #include <stdint.h>
+#include <vector>
 
 //aufgabe
 #include "BackEnd.hpp"
@@ -12,6 +13,7 @@
 
 //boost
 #include <boost/scoped_ptr.hpp>
+#include <boost/shared_ptr.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/foreach.hpp>
 #include <boost/numeric/ublas/matrix.hpp>
@@ -31,9 +33,9 @@ public:
 
   // XXX will never work this way. IQueryResult is pure virtual, return shared_ptr???
 
-  virtual QueryResult matchAd(std::string   query,   
-			      const  IUser* user = NULL, 
-			      bool* foundAd = NULL) = 0;
+  virtual std::vector<std::string> matchAd(const std::string& query,   
+					   const  IUser* user = NULL, 
+					   bool* foundAd = NULL) = 0;
   
   // ermittelt die Landing Page des Ads adID und erhöht seine
   // Klickanzahl
@@ -48,7 +50,6 @@ public:
   virtual bool analyzeDemographicFeatures(const std::string& userFile, 
 					  const std::string& visitFile) = 0;
 
-  // setze das zu verwendende Backend
   virtual void setBackend(IBackEnd* backend) = 0;
 };
 
@@ -56,18 +57,18 @@ public:
 
 class FrontEnd : public IFrontEnd
 {
-
-
 public:
-  FrontEnd(std::ifstream& in);
+  FrontEnd(boost::shared_ptr<sql::Connection> con_) : con(con_), backEnd_(NULL) { 
+  }
+
   virtual ~FrontEnd() {}
 
   // ermittelt das am besten passende Ad und erhöht die
   // Impressionsanzahl
 
-  virtual QueryResult matchAd(std::string   query,   
-   			       const  IUser* user = NULL, 
-			       bool* foundAd = NULL);
+  virtual std::vector<std::string> matchAd(const std::string& query,   
+					   const  IUser* user = NULL, 
+					   bool* foundAd = NULL);
 
   // ermittelt die Landing Page des Ads adID und erhöht seine
   // Klickanzahl
@@ -81,27 +82,24 @@ public:
   virtual bool analyzeDemographicFeatures(const std::string& userFile, 
 					  const std::string& visitFile);
 
-  // setze das zu verwendende Backend
-  virtual void setBackend(IBackEnd* backend);
-
-protected:
-	boost::numeric::ublas::vector<int> getVec(int i, int size);
-
-
-
+  virtual void setBackend(IBackEnd* backend) {
+    this->backEnd_ = backend;
+  }
 private:
+  struct EDGE {
+    std::string query;
+    std::string ad;
+    int numClicks;
+  };
+
+  boost::shared_ptr<sql::Connection> con;
+  boost::numeric::ublas::vector<int> getVec(int i, int size);
   IBackEnd* backEnd_;
-struct	EDGE{
- 	std::string query;
-	std::string ad;
-	int numClicks;
-};
-	 void parseConfig(std::ifstream& in);
- 	 boost::scoped_ptr<sql::Connection> con;
-	 bool tablesExist();
-	double spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row);
-	double weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col, int j);
-	int countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j);
+
+  bool tablesExist();
+  double spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row);
+  double weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col, int j);
+  int countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j);
 };
 
 

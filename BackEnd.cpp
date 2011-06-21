@@ -10,7 +10,7 @@
 #include <cppconn/warning.h>
 
 #include <boost/lexical_cast.hpp>
-
+#include <boost/tokenizer.hpp>
 
 #include <stdexcept>
 
@@ -18,14 +18,10 @@
 using namespace std;
 using namespace boost;
 
-BackEnd::BackEnd(std::ifstream& in) {
-  parseConfig(in);
-}
-
-QueryResult BackEnd::matchAdRewrites(std::list<std::string> rewriteList, 
-			    const IUser* user, 
-			    bool* foundAd) {
-  (void)foundAd;
+QueryResult BackEnd::matchAdRewrites(const std::vector<std::string>& rewriteList, 
+				     const IUser* user, 
+				     bool*) {
+  typedef std::vector<std::string> StrVec;
   boost::scoped_ptr<sql::PreparedStatement> pstmt;
   boost::scoped_ptr<sql::ResultSet> rs;
 
@@ -35,19 +31,24 @@ QueryResult BackEnd::matchAdRewrites(std::list<std::string> rewriteList,
   try {
     if(user == NULL) {
       //no user, just query
-      pstmt.reset(con->prepareStatement("SELECT Titel, Slogan, a.AdID FROM (Ads as a JOIN Queries as q ON a.AdID = q.AdID) WHERE Bid_Phrase LIKE ? OR Bid_Phrase LIKE ? OR Bid_Phrase LIKE ? OR Bid_Phrase LIKE ? OR Bid_Phrase LIKE ? OR Bid_Phrase LIKE ? ORDER BY (Anzahl_Klicks / Anzahl_Impressions)*Gebot DESC"));
-      pstmt->setString(1, rewriteList.front());
-      int count=2;
-      std::list<std::string>::iterator it;
-      for(it=++(rewriteList.begin());it!=rewriteList.end();it++){
-      		pstmt->setString(count, *it);
-		count++;
-	}
-	for(count=count;count<7;count++){
-		pstmt->setString(count, *it);
-	}
-		
-		
+      std::string stmt = "SELECT Titel, Slogan, a.AdID "
+	"FROM (Ads as a JOIN Queries as q ON a.AdID = q.AdID) "
+	"WHERE ";
+
+      std::string phrase = "Bid_Phrase LIKE ? ";
+      std::string or_str = " OR ";
+      std::string order = "ORDER BY (Anzahl_Klicks / Anzahl_Impressions) * Gebot DESC";
+      
+      for(StrVec::const_iterator it = rewriteList.begin(); it != --(rewriteList.end()); ++it) { 
+	stmt.append(phrase); stmt.append(or_str);
+      }
+      stmt.append(phrase);
+      stmt.append(order);
+
+      pstmt.reset(con->prepareStatement(stmt));
+      for(unsigned int i = 0; i < rewriteList.size(); ++i) {
+	pstmt->setString(i, rewriteList[i]);
+      }
 
     } else {
       //gender, dance the user dance
@@ -97,32 +98,6 @@ QueryResult BackEnd::matchAdRewrites(std::list<std::string> rewriteList,
 
 
 }
-
-void BackEnd::parseConfig(std::ifstream& in) {
-  if (!in.is_open()) throw std::runtime_error("File not found");
-
-  typedef tokenizer< char_separator<char> > Tokenizer;
-  char_separator<char> sep("=");
-  vector< string > vec;
-  string line;
-  size_t commentId;
-  map<string,string> dbConfig;
-  
-  while (getline(in,line)){
-    commentId=line.find("##");
-    if (commentId==string::npos){       
-      Tokenizer tok(line,sep);
-      //unsafe - wrong syntax like 'newlines' will crash
-      Tokenizer::iterator it=tok.begin();
-      dbConfig.insert(std::pair<string, string>(*(it++), *(it)));
-    }
-  }
-
-  sql::Driver* driver = get_driver_instance();
-  con.reset(driver->connect(dbConfig["Server"]+":"+dbConfig["Port"], dbConfig["User"], dbConfig["Password"]));
-  con->setSchema("AdWorks");
-}
-
 
   // siehe: IFrontEnd::getAdURL
 std::string BackEnd::getAdURL(uint32_t adID) {

@@ -17,9 +17,15 @@
 //c99
 #include <stdint.h>
 
+// sql
+#include <mysql_connection.h>
+#include <cppconn/driver.h>
+
+
 //lib
 #include "BackEnd.hpp"
 #include "FrontEnd.hpp"
+#include "ConfigParser.hpp"
 
 namespace po = boost::program_options;
 
@@ -129,7 +135,8 @@ bool matchad(int argc, char* argv[]) {
     user.reset(new User(gender, age));
   
   for(str_vec::const_iterator it = queries.begin(); it != queries.end(); ++it) {
-    QueryResult query = frontEnd->matchAd(*it, user.get());
+    std::vector<std::string> rewrites = frontEnd->matchAd(*it, user.get());
+    QueryResult query = backEnd->matchAdRewrites(rewrites, user.get());
     std::cout << "Query: " << *it << " returns ad with\n"
 	      << "title: " << query.getTitle() << "\n"
 	      << "creative: " << query.getCreative() << "\n"
@@ -175,7 +182,6 @@ bool reload(int argc, char* argv[]) {
 
 int main(int argc, char* argv[]) {
   //map options into functions from arguments to bool
-  
   //so we still can read the beautiful whatS of exceptions
   //try {
     typedef std::tr1::function<bool (int argc, char* argv[])> OptionFunction;
@@ -192,11 +198,22 @@ int main(int argc, char* argv[]) {
       return EXIT_FAILURE;
     }
     
+      
     //TODO: bad design!!
     std::ifstream in("config.txt");
-    frontEnd.reset(new FrontEnd(in));
-    std::ifstream in1("config.txt");
-    backEnd.reset(new BackEnd(in1));
+    
+    Config cfg(in);
+    in.close();
+
+    sql::Driver* driver = get_driver_instance();
+    boost::shared_ptr<sql::Connection> con;
+    con.reset(driver->connect(cfg["Server"]+":"+cfg["Port"], 
+			      cfg["User"], cfg["Password"]));
+
+    con->setSchema("AdWorks");
+
+    frontEnd.reset(new FrontEnd(con));
+    backEnd.reset(new BackEnd(con));
     frontEnd->setBackend(backEnd.get());
 
     std::string option(argv[1]);

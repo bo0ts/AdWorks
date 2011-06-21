@@ -6,12 +6,12 @@
 
 //boost
 #include <boost/scoped_ptr.hpp>
-#include <boost/tokenizer.hpp>
-#include <boost/foreach.hpp>
+#include <boost/shared_ptr.hpp>
 
 //std
 #include <stdint.h>
 #include <fstream>
+#include <vector>
 
 //sql
 #include <cppconn/connection.h>
@@ -26,9 +26,9 @@ public:
 
   // XXX see why this wont fucking work
 
-  virtual QueryResult matchAdRewrites(std::list<std::string> rewriteList, 
-   				       const IUser* user = NULL, 
-   				       bool* foundAd = NULL) = 0;
+  virtual QueryResult matchAdRewrites(const std::vector<std::string>& rewriteList, 
+				      const IUser* user = NULL, 
+				      bool* foundAd = NULL) = 0;
 
   // siehe: IFrontEnd::getAdURL
   virtual std::string getAdURL(uint32_t adID) = 0;
@@ -40,9 +40,9 @@ public:
 class BackEnd : public IBackEnd
 {
 public:
-  BackEnd(std::ifstream& in);
+  BackEnd(boost::shared_ptr<sql::Connection> con) : con(con) { }
   virtual ~BackEnd() {}
-  virtual QueryResult matchAdRewrites(std::list<std::string> rewriteList, 
+  virtual QueryResult matchAdRewrites(const std::vector<std::string>& rewriteList, 
 				      const IUser* user = NULL, 
 				      bool* foundAd = NULL);
 
@@ -52,8 +52,7 @@ public:
   // Datenbank mit Ads und Bid Phrases initialisieren
   virtual bool initDatabase(const std::string& adFile, const std::string& bidPhraseFile);
 private:
-  void parseConfig(std::ifstream& in);
-  boost::scoped_ptr<sql::Connection> con;
+  boost::shared_ptr<sql::Connection> con;
   bool tablesExist();
 };
 

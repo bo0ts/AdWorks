@@ -4,7 +4,8 @@
 #include <set>
 #include <boost/lexical_cast.hpp>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
+
 //sql
 #include <mysql_connection.h>
 #include <cppconn/driver.h>
@@ -17,14 +18,11 @@
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
 
+namespace ublas = boost::numeric::ublas;
 using namespace std;
 using namespace boost;
 
-FrontEnd::FrontEnd(std::ifstream& in):backEnd_(NULL) {
-  parseConfig(in);
-}
-
-int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j){
+int FrontEnd::countSameNeighbors(ublas::matrix<double> a, int i, int j){
   int count=0;
   for (unsigned h = 0; h < a.size1(); ++h)
     if(a(i,h)!=0&&a(j,h)!=0)
@@ -32,7 +30,7 @@ int FrontEnd::countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i,
   return count;
 }
 
-double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col, int j){
+double FrontEnd::weight(ublas::matrix_column<ublas::matrix<double> > col, int j){
   double sum=0;	
   for (unsigned i = 0; i < col.size(); ++i){
     sum+=col(i);		
@@ -40,7 +38,7 @@ double FrontEnd::weight(boost::numeric::ublas::matrix_column<boost::numeric::ubl
   return col(j)/sum;
 }
 
-double FrontEnd::spread(boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row){
+double FrontEnd::spread(ublas::matrix_row<ublas::matrix<double> > row){
   int count=0;
   double sum=0;
   for (unsigned i = 0; i < row.size(); ++i)
@@ -77,10 +75,11 @@ bool FrontEnd::tablesExist() {
     throw e;
   }
 } 
-QueryResult FrontEnd::matchAd(std::string query,   
-			      const  IUser* user, 
-			      bool* foundAd) {
-  std::list<std::string> rewrites;
+
+std::vector<std::string> FrontEnd::matchAd(const std::string& query,   
+					   const  IUser*, 
+					   bool*) {
+  std::vector<std::string> rewrites;
 
   //rewrite the query and put all rewrites in here
   rewrites.push_back(query);
@@ -90,14 +89,16 @@ QueryResult FrontEnd::matchAd(std::string query,
   scoped_ptr<sql::ResultSet> rs;	
 	
   try {
-    pstmt.reset(con->prepareStatement("SELECT 1_Query, 2_Query, 3_Query, 4_Query, 5_Query FROM QueryRewrites WHERE Query LIKE ?"));
+    pstmt.reset(con->prepareStatement("SELECT 1_Query, 2_Query, 3_Query, 4_Query, 5_Query " 
+				      "FROM QueryRewrites WHERE Query LIKE ?"));
     pstmt->setString(1, query);
     rs.reset(pstmt->executeQuery());
 
     if(rs->next()){
       for(unsigned int i=1;i<6;i++){
 	string rewrite=rs->getString(i);
-	if(rewrite.compare("") != 0)
+	
+	if(!rewrite.empty())
 	  rewrites.push_back(rewrite);
       }
     }
@@ -105,16 +106,15 @@ QueryResult FrontEnd::matchAd(std::string query,
     cout << "in BackEnd::matchAdRewrites: " << e.getErrorCode() << endl;
     throw e;
   } 
+
   /*
   //testoutput
   std::list<std::string>::iterator it;
   for(it=rewrites.begin();it!=rewrites.end();it++)
   cout<<(*it)<<endl;
   */
-  if(backEnd_ != NULL)
-    return backEnd_->matchAdRewrites(rewrites, user, foundAd);
-  else
-    throw std::runtime_error("backEnd is NULL");
+
+  return rewrites;
 }
 
 std::string FrontEnd::getAdURL(uint32_t adID) {
@@ -124,42 +124,17 @@ std::string FrontEnd::getAdURL(uint32_t adID) {
     throw std::runtime_error("backEnd is NULL");
 }
 
-boost::numeric::ublas::vector<int> FrontEnd::getVec(int i, int size){
-  //boost::numeric::ublas::vector<int> v=boost::numeric::ublas::zero_vector<int>(size);
+ublas::vector<int> FrontEnd::getVec(int i, int size){
+  //ublas::vector<int> v=ublas::zero_vector<int>(size);
   //v(i)=1;
   //return v;
-  boost::numeric::ublas::vector<double> v(size);
+  ublas::vector<double> v(size);
   for(int j =0; j<size;j++)
     if(i!=j)	
       v(j)=0;
     else
       v(j)=1;
   return v;
-}
-
-void FrontEnd::parseConfig(std::ifstream& in) {
-  if (!in.is_open()) throw std::runtime_error("File not found");
-
-  typedef tokenizer< char_separator<char> > Tokenizer;
-  char_separator<char> sep("=");
-  vector< string > vec;
-  string line;
-  size_t commentId;
-  map<string,string> dbConfig;
-  
-  while (getline(in,line)){
-    commentId=line.find("##");
-    if (commentId==string::npos){       
-      Tokenizer tok(line,sep);
-      //unsafe - wrong syntax like 'newlines' will crash
-      Tokenizer::iterator it=tok.begin();
-      dbConfig.insert(std::pair<string, string>(*(it++), *(it)));
-    }
-  }
-  
-  sql::Driver* driver = get_driver_instance();
-  con.reset(driver->connect(dbConfig["Server"]+":"+dbConfig["Port"], dbConfig["User"], dbConfig["Password"]));
-  con->setSchema("AdWorks");
 }
 
 //Operator for ranking rewrites
@@ -225,7 +200,7 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 	
   //simrank
   //build adjacency-matrix
-  boost::numeric::ublas::matrix<double> a=boost::numeric::ublas::zero_matrix<double>(ads.size()+queries.size(),ads.size()+queries.size());
+  ublas::matrix<double> a=ublas::zero_matrix<double>(ads.size()+queries.size(),ads.size()+queries.size());
 	
 
   int posInQueries, posInAds;
@@ -246,29 +221,29 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
   // cout<<std::endl;
 
   //built transition Matrix p
-  boost::numeric::ublas::matrix<double> p=boost::numeric::ublas::zero_matrix<double>(a.size1(),a.size1());
+  ublas::matrix<double> p=ublas::zero_matrix<double>(a.size1(),a.size1());
   for(unsigned int i=0; i<queries.size();i++){
     for(unsigned int j=queries.size(); j<p.size2(); j++){
       if(a(j,i)==0) continue;
-      boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row (a, j);
-      boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (a, i);			
+      ublas::matrix_row<ublas::matrix<double> > row (a, j);
+      ublas::matrix_column<ublas::matrix<double> > col (a, i);			
       p(j,i)=spread(row)*weight(col,j);			
     }
 		
-  }	
+  }
   /*
     for(unsigned int i=queries.size(); i<p.size2();i++){
     for(unsigned int j=0; j<queries.size(); j++){
     if(a(j,i)==0) continue;
-    boost::numeric::ublas::matrix_row<boost::numeric::ublas::matrix<double> > row (a, j);
-    boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (a, i);			
+    ublas::matrix_row<ublas::matrix<double> > row (a, j);
+    ublas::matrix_column<ublas::matrix<double> > col (a, i);			
     p(j,i)=spread(row)*weight(col,j);			
     }
 		
     }
   */
   for(unsigned int i=0; i<a.size1();i++){
-    boost::numeric::ublas::matrix_column<boost::numeric::ublas::matrix<double> > col (p, i);	
+    ublas::matrix_column<ublas::matrix<double> > col (p, i);	
     double sum=0;	
     for (unsigned j = 0; j < col.size(); ++j){
       sum+=col(j);		
@@ -285,12 +260,12 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
   // }
 
   //bulit identity-matrix
-  boost::numeric::ublas::matrix<double> id=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
+  ublas::matrix<double> id=ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
   for(unsigned int i=0; i<p.size1();i++)
     id(i,i)=1;
 		
   //bulid V
-  boost::numeric::ublas::matrix<double> v=boost::numeric::ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
+  ublas::matrix<double> v=ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
   for(unsigned int i=0; i<a.size1();i++){
     for(unsigned int j=0; j<a.size2(); j++){
       double sum=0;
@@ -310,7 +285,7 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
   //   cout<<std::endl;
   // }	
 
-  boost::numeric::ublas::matrix<double> s=id;
+  ublas::matrix<double> s=id;
   int k=5;
   double c=0.8;
   //calc simrank with C=0.8, k=20
@@ -360,6 +335,8 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
     }		
     cout << endl;
   }
+  std::cout << "|-" << std::endl;
+
 	
   //load into DB
   boost::scoped_ptr<sql::PreparedStatement> pstmt;
@@ -411,7 +388,3 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 bool FrontEnd::analyzeDemographicFeatures(const std::string& userFile, 
 					  const std::string& visitFile)
 { (void)userFile; (void)visitFile; return true;}
-
-void FrontEnd::setBackend(IBackEnd* backend) {
-  this->backEnd_ = backend;
-}
