@@ -36,7 +36,7 @@ boost::scoped_ptr<IFrontEnd> frontEnd;
 bool help(int argc, char* argv[]) { 
   (void)argc; (void)argv;
   std::cout << "helpful message" << std::endl
-	    << "modules: visit, reload, matchad" << std::endl
+	    << "modules: visit, reload, matchad, load_click_data" << std::endl
 	    << "each has its own help message, e.g. $ adworks visit --help" << std::endl;
   return true;
 }
