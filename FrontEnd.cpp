@@ -231,17 +231,18 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
     }
 		
   }
-  /*
-    for(unsigned int i=queries.size(); i<p.size2();i++){
+
+  // XXX magick transition mode
+  for(unsigned int i=queries.size(); i<p.size2();i++){
     for(unsigned int j=0; j<queries.size(); j++){
-    if(a(j,i)==0) continue;
-    ublas::matrix_row<ublas::matrix<double> > row (a, j);
-    ublas::matrix_column<ublas::matrix<double> > col (a, i);			
-    p(j,i)=spread(row)*weight(col,j);			
+      if(a(j,i)==0) continue;
+      ublas::matrix_row<ublas::matrix<double> > row (a, j);
+      ublas::matrix_column<ublas::matrix<double> > col (a, i);			
+      p(j,i)=spread(row)*weight(col,j);			
     }
-		
-    }
-  */
+  }
+  // XXX magick transition mode
+
   for(unsigned int i=0; i<a.size1();i++){
     ublas::matrix_column<ublas::matrix<double> > col (p, i);	
     double sum=0;	
@@ -251,29 +252,29 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
     p(i,i)=1.0-sum;
   }
 	
-  // cout<<std::endl;
-  // for(unsigned int i=0; i<p.size1();i++){
-  //   for(unsigned int j=0; j<p.size2(); j++){
-  //     cout<<p(i,j)<<"\t";
-  //   }
-  //   cout<<std::endl;
-  // }
+  cout<<std::endl;
+  for(unsigned int i=0; i<p.size1();i++){
+    cout<<"|";
+    for(unsigned int j=0; j<p.size2(); j++){
+      cout<<p(i,j)<<"|";
+    }
+    cout<<std::endl;
+  }
+  cout<<std::endl;
 
-  //bulit identity-matrix
+  //build identity-matrix
   ublas::matrix<double> id=ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
   for(unsigned int i=0; i<p.size1();i++)
     id(i,i)=1;
 		
-  //bulid V
+  //build V
   ublas::matrix<double> v=ublas::zero_matrix<int>(ads.size()+queries.size(),ads.size()+queries.size());
   for(unsigned int i=0; i<a.size1();i++){
     for(unsigned int j=0; j<a.size2(); j++){
       double sum=0;
       for(int h=1;h<=countSameNeighbors(a,i,j);++h)
 	sum+=1.0/(pow(2,h));			
-      if(sum==0) v(i,j)=0.25;			
-      v(i,j)=sum;
-			
+      v(i,j) = sum == 0 ? 0.25 : sum;
     }	
   }
 
@@ -290,19 +291,22 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
   double c=0.8;
   //calc simrank with C=0.8, k=20
   for(int loop=0;loop<k;loop++){
-    s=prod(c*trans(p),s);
+    s = prod(c*p,s);
 		
-    s=prod(s,p);
+    s = prod(s,trans(p));
     //set diag=1	
     for(unsigned int col=0; col<s.size1();col++)
       for(unsigned int row=0; row<s.size2();row++)
 	if(row==col)
 	  s(col,row)=1;	
   }
+
+  // XXX magick mode 
   for(unsigned int i=0; i<s.size1();i++)
     for(unsigned int j=0; j<s.size2(); j++)		
       s(i,j)=s(i,j)*v(i,j);
-	
+  // XXX magick mode
+
   // for(unsigned int i=0; i<s.size1();i++){
   //   for(unsigned int j=0; j<s.size2(); j++){
   //     cout<<s(i,j)<<"\t";
