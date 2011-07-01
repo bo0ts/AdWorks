@@ -2,7 +2,6 @@
 #include <boost/program_options.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/assign.hpp>
-#include <boost/filesystem.hpp>
 
 
 //std
@@ -71,18 +70,11 @@ bool perform_lda(int argc, char* argv[]) {
   }
 
   //iterate the dir and squash the files
-  namespace fs = boost::filesystem;
-  boost::filesystem::path p(dirName);
   std::cout << dirName << std::endl;
 
   // already have a file with that name? Not my problem.
   std::ofstream o("tmpfile-lda.txt");
-  
-  for(fs::directory_iterator it(p); it != fs::directory_iterator(); ++it) { 
-    std::ifstream i(it->path().native().c_str());
-    lda(i, o);
-    o << "\n";
-  }
+  lda(dirName, o);
   
   //here
   std::system("lda est 0.01 40 settings.txt tmpfile-lda.txt random foo/");

@@ -22,7 +22,7 @@
 //sql
 #include <cppconn/connection.h>
 
-void lda(std::ifstream& in, std::ofstream& out);
+void lda(const std::string& path, std::ofstream& out);
 
 class IFrontEnd
 {

@@ -23,7 +23,7 @@
 #include <boost/numeric/ublas/io.hpp>
 #include <boost/tokenizer.hpp>
 #include <boost/lexical_cast.hpp>
-
+#include <boost/filesystem.hpp>
 
 namespace ublas = boost::numeric::ublas;
 using namespace std;
@@ -422,35 +422,39 @@ private:
   int count;
 };
 
-void lda(std::ifstream& in, std::ofstream& out) {
-  if (!in.is_open()) throw std::runtime_error("File not found");
-  //
-  std::istreambuf_iterator<char> file_iter(in);
-  std::istreambuf_iterator<char> eof;
-  std::ostream_iterator<string> out_stream(out);
+void lda(const std::string& path, std::ofstream& out) {
+  namespace fs = boost::filesystem;
+  typedef std::vector<std::string> StrVec;
+  typedef std::multiset<std::string> CountSet;
   typedef boost::tokenizer< boost::char_separator<char>,
                             std::istreambuf_iterator<char>
                             > Tokenizer;
+
   // throw away everything that we think is not part of the alphabet
   boost::char_separator<char> sep("  \".;:-()!?,\t\n–");
-  typedef std::vector<std::string> StrVec;
-  typedef std::multiset<std::string> CountSet;
+  StrVec global_strings;
+  fs::path p(path);
 
-  StrVec vec;
-  Tokenizer tok(file_iter, eof, sep);
-  // we want all unique words with their count appended to the string
-  // read all words, sort them
-  std::copy(tok.begin(), tok.end(), std::back_inserter(vec));
-  std::sort(vec.begin(), vec.end());
+  for(fs::directory_iterator it(p); it != fs::directory_iterator(); ++it) { 
+    std::ifstream i(it->path().native().c_str());
+    std::istreambuf_iterator<char> file_iter(i);
+    std::istreambuf_iterator<char> eof;
+    std::ostream_iterator<string> out_stream(out);
+    StrVec vec;
+    Tokenizer tok(file_iter, eof, sep);
+    // we want all unique words with their count appended to the string
+    // read all words, sort them
+    std::copy(tok.begin(), tok.end(), std::back_inserter(vec));
+    std::sort(vec.begin(), vec.end());
 
-  CountSet counting_set(vec.begin(), vec.end());
-  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
-  
-  //decorate each with a count
-  out << vec.size() << " ";
-  
-  std::transform(vec.begin(), vec.end(), out_stream,
-                 ToCount(&counting_set));
+    CountSet counting_set(vec.begin(), vec.end());
+    vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+    
+    //decorate each with a count
+    std::transform(vec.begin(), vec.end(), out_stream,
+                   ToCount(&counting_set));
+    out << "\n";
+  }
 }
 
 
