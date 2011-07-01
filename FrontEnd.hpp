@@ -22,6 +22,8 @@
 //sql
 #include <cppconn/connection.h>
 
+void lda(std::ifstream& in, std::ofstream& out);
+
 class IFrontEnd
 {
 public:
@@ -102,5 +104,20 @@ private:
   int countSameNeighbors(boost::numeric::ublas::matrix<double> a, int i, int j);
 };
 
+
+// devilish hackery 
+
+// we just keep all the analyzeClickGraph junk
+// getAdURL junk and only overwrite matchAd
+// eat this liskov substitution
+class LDAFrontEnd : public FrontEnd {
+  virtual ~LDAFrontEnd() {}
+
+  // ermittelt das am besten passende Ad und erhöht die
+  // Impressionsanzahl
+  virtual std::vector<std::string> matchAd(const std::string& query,   
+					   const  IUser* user = NULL, 
+					   bool* foundAd = NULL);
+};
 
 #endif /* _FRONTEND_H_ */

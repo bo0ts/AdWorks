@@ -2,9 +2,11 @@
 #include <stdexcept>
 #include <map>
 #include <set>
-#include <boost/lexical_cast.hpp>
 #include <algorithm>
 #include <cmath>
+#include <vector>
+#include <string>
+#include <set>
 
 //sql
 #include <mysql_connection.h>
@@ -15,8 +17,13 @@
 #include <cppconn/resultset_metadata.h>
 #include <cppconn/exception.h>
 #include <cppconn/warning.h>
+
+//boost
 #include <boost/numeric/ublas/matrix_proxy.hpp>
 #include <boost/numeric/ublas/io.hpp>
+#include <boost/tokenizer.hpp>
+#include <boost/lexical_cast.hpp>
+
 
 namespace ublas = boost::numeric::ublas;
 using namespace std;
@@ -392,3 +399,62 @@ bool FrontEnd::analyzeClickGraph(const std::string& file) {
 bool FrontEnd::analyzeDemographicFeatures(const std::string& userFile, 
 					  const std::string& visitFile)
 { (void)userFile; (void)visitFile; return true;}
+
+
+/////////////////////// LDA FrontEnd //////////////////////////////
+
+class ToCount
+{
+public:
+  ToCount(std::multiset<std::string>* ctr) : ctr(ctr), count(0) { }
+  std::string operator()(std::string& x) {
+    std::string ret = "";
+    int i = ctr->count(x);
+    ret.append(boost::lexical_cast<std::string>(count));
+    ret.append(":");
+    ret.append(boost::lexical_cast<std::string>(i));
+    ret.append(" ");
+    ++count;
+    return ret;
+  }
+private:
+  std::multiset<std::string>* ctr;
+  int count;
+};
+
+void lda(std::ifstream& in, std::ofstream& out) {
+  if (!in.is_open()) throw std::runtime_error("File not found");
+  //
+  std::istreambuf_iterator<char> file_iter(in);
+  std::istreambuf_iterator<char> eof;
+  std::ostream_iterator<string> out_stream(out);
+  typedef boost::tokenizer< boost::char_separator<char>,
+                            std::istreambuf_iterator<char>
+                            > Tokenizer;
+  // throw away everything that we think is not part of the alphabet
+  boost::char_separator<char> sep("  \".;:-()!?,\t\n–");
+  typedef std::vector<std::string> StrVec;
+  typedef std::multiset<std::string> CountSet;
+
+  StrVec vec;
+  Tokenizer tok(file_iter, eof, sep);
+  // we want all unique words with their count appended to the string
+  // read all words, sort them
+  std::copy(tok.begin(), tok.end(), std::back_inserter(vec));
+  std::sort(vec.begin(), vec.end());
+
+  CountSet counting_set(vec.begin(), vec.end());
+  vec.erase(std::unique(vec.begin(), vec.end()), vec.end());
+  
+  //decorate each with a count
+  out << vec.size() << " ";
+  
+  std::transform(vec.begin(), vec.end(), out_stream,
+                 ToCount(&counting_set));
+}
+
+
+std::vector<std::string> LDAFrontEnd::matchAd(const std::string& query,   
+                                              const IUser*, bool*) /* ignored params */ {
+  return std::vector<std::string>();
+}

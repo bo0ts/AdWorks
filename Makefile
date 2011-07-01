@@ -3,7 +3,7 @@ CXX = g++
 DEBUG = -g
 OPTI = -O0
 CXXFLAGS = -Wall -Wextra -c $(DEBUG) $(OPTI)
-LFLAGS = -lboost_program_options -lmysqlcppconn $(DEBUG) $(OPTI)
+LFLAGS = -lboost_program_options -lboost_filesystem -lmysqlcppconn $(DEBUG) $(OPTI)
 
 adworks: $(OBJS) 
 	$(CXX) $(LFLAGS) $(OBJS) -o adworks

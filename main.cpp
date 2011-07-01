@@ -2,6 +2,7 @@
 #include <boost/program_options.hpp>
 #include <boost/scoped_ptr.hpp>
 #include <boost/assign.hpp>
+#include <boost/filesystem.hpp>
 
 
 //std
@@ -16,6 +17,7 @@
 
 //c99
 #include <stdint.h>
+#include <cstdlib>
 
 // sql
 #include <mysql_connection.h>
@@ -47,9 +49,51 @@ bool help(int argc, char* argv[]) {
   return true;
 }
 
+bool perform_lda(int argc, char* argv[]) { 
+  std::string dirName;
+  po::options_description desc("Allowed options for perform_lda");
+  desc.add_options()
+    ("help", "produces help message")
+    ("lda-dir", po::value<std::string>(&dirName));
+  
+  po::variables_map vm;
+  po::store(po::parse_command_line(argc, argv, desc), vm);
+  po::notify(vm);    
+
+  if(vm.count("help")) {
+    std::cout << desc << std::endl;
+    return EXIT_SUCCESS;
+  }
+
+  if(!vm.count("lda-dir")) {
+    std::cout << "no lda-dir given. See --help" << std::endl;
+    return EXIT_FAILURE;
+  }
+
+  //iterate the dir and squash the files
+  namespace fs = boost::filesystem;
+  boost::filesystem::path p(dirName);
+  std::cout << dirName << std::endl;
+
+  // already have a file with that name? Not my problem.
+  std::ofstream o("tmpfile-lda.txt");
+  
+  for(fs::directory_iterator it(p); it != fs::directory_iterator(); ++it) { 
+    std::ifstream i(it->path().native().c_str());
+    lda(i, o);
+    o << "\n";
+  }
+  
+  //here
+  std::system("lda est 0.01 40 settings.txt tmpfile-lda.txt random foo/");
+  
+  return true;
+}
+
+
 bool load_click_data(int argc, char* argv[]) {
   std::string fileName;
-  po::options_description desc("Allowed options for visit");
+  po::options_description desc("Allowed options for load_click_data");
   desc.add_options()
     ("help", "produces help message")
     ("click-file", po::value<std::string>(&fileName));
@@ -191,7 +235,7 @@ int main(int argc, char* argv[]) {
     boost::assign::insert(options)
       ( "help",    &help )( "visit",  &visit )
       ( "matchad", &matchad )( "reload", &reload )
-      ( "load_click_data", &load_click_data );
+      ( "load_click_data", &load_click_data )("perform_lda", &perform_lda);
 
     if(argc < 2) { 
       std::cout << "no option specified" << std::endl;
